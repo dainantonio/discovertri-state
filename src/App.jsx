@@ -1,596 +1,967 @@
-import React, { useState, useMemo } from 'react';
-import { 
-  MapPin, 
-  Search, 
-  Menu, 
-  Heart, 
-  Star, 
-  TrendingUp, 
-  Coffee, 
-  Mountain, 
-  Wrench, 
-  Hammer, 
-  Music, 
-  Award,
-  DollarSign,
-  Users,
-  ArrowRight
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discover Tri-State</title>
+    
+    <!-- 1. Load Tailwind CSS (Styling) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 2. Load Babel (To compile React in the browser) -->
+    <!-- FIXED: Pinned to version 7.23.6 to resolve the ".targets['esmodules']" boolean error -->
+    <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
 
-/* --- MOCK DATA & CONFIGURATION --- */
+    <!-- 3. Import Map (Tells browser where to find React & Icons without npm) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+      }
+    }
+    </script>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
 
-const REGIONS = [
-  "All Areas",
-  "Huntington (WV)",
-  "Ashland (KY)",
-  "Ironton (OH)",
-  "Barboursville",
-  "Wayne",
-  "Milton"
-];
+    <!-- 4. The Application Code -->
+    <script type="text/babel" data-type="module">
+        import React, { useState, useMemo } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { 
+          MapPin, Search, Menu, Heart, Star, TrendingUp, Coffee, 
+          Mountain, Wrench, Hammer, Music, Award, DollarSign, 
+          Users, ArrowRight 
+        } from 'lucide-react';
 
-const CATEGORIES = [
-  { id: 'all', label: 'All', icon: TrendingUp },
-  { id: 'food', label: 'Food & Drink', icon: Coffee },
-  { id: 'adventure', label: 'Adventure', icon: Mountain },
-  { id: 'culture', label: 'Culture & Arts', icon: Music },
-  { id: 'experiences', label: 'Makers & Classes', icon: Hammer },
-  { id: 'services', label: 'Local Services', icon: Wrench },
-];
-
-// Appalachian-themed mock data
-const INITIAL_LISTINGS = [
-  {
-    id: 1,
-    name: "Blenko Glass Workshop",
-    category: "experiences",
-    region: "Milton",
-    description: "Hand-blown glass since 1893. Take a workshop and blow your own iconic water bottle.",
-    image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&q=80&w=800",
-    rating: 4.9,
-    reviews: 1240,
-    isLocalHero: true, // Replaces Recovery Badge
-    fundingGoal: 5000,
-    raised: 4200,
-    tags: ["Historic", "Maker", "Family Friendly"]
-  },
-  {
-    id: 2,
-    name: "Stewart's Original Hot Dogs",
-    category: "food",
-    region: "Huntington (WV)",
-    description: "A Tri-State staple. Serving legendary hot dogs and root beer in the drive-in since 1932.",
-    image: "https://images.unsplash.com/photo-1619740455993-9e612b4af62a?auto=format&fit=crop&q=80&w=800",
-    rating: 4.8,
-    reviews: 856,
-    isLocalHero: false,
-    fundingGoal: 0,
-    raised: 0,
-    tags: ["Classic", "Drive-in", "Cheap Eats"]
-  },
-  {
-    id: 3,
-    name: "Hatfield-McCoy ATV Trails",
-    category: "adventure",
-    region: "Wayne",
-    description: "World-class off-road trails winding through the rugged Appalachian mountains.",
-    image: "https://images.unsplash.com/photo-1599407360228-5b43d7890f5d?auto=format&fit=crop&q=80&w=800",
-    rating: 5.0,
-    reviews: 3200,
-    isLocalHero: true,
-    fundingGoal: 15000,
-    raised: 12500,
-    tags: ["Outdoors", "Extreme", "Rentals Available"]
-  },
-  {
-    id: 4,
-    name: "Paramount Arts Center",
-    category: "culture",
-    region: "Ashland (KY)",
-    description: "Historic theater hosting concerts, plays, and community events in a restored 1930s venue.",
-    image: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&q=80&w=800",
-    rating: 4.7,
-    reviews: 420,
-    isLocalHero: true,
-    fundingGoal: 8000,
-    raised: 1500,
-    tags: ["History", "Live Music", "Non-Profit"]
-  },
-  {
-    id: 5,
-    name: "Heritage Farm Museum",
-    category: "culture",
-    region: "Huntington (WV)",
-    description: "An Appalachian village museum showcasing pioneer life, industry, and petting zoos.",
-    image: "https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?auto=format&fit=crop&q=80&w=800",
-    rating: 4.9,
-    reviews: 1100,
-    isLocalHero: false,
-    fundingGoal: 0,
-    raised: 0,
-    tags: ["Education", "Nature", "Museum"]
-  },
-  {
-    id: 6,
-    name: "Ohio River Kayak Rentals",
-    category: "adventure",
-    region: "Ironton (OH)",
-    description: "Sunset paddles and guided tours along the mighty Ohio River.",
-    image: "https://images.unsplash.com/photo-1543160882-72c011e031a0?auto=format&fit=crop&q=80&w=800",
-    rating: 4.6,
-    reviews: 150,
-    isLocalHero: false,
-    fundingGoal: 0,
-    raised: 0,
-    tags: ["Water Sports", "Seasonal", "Views"]
-  },
-  {
-    id: 7,
-    name: "Tri-State Plumbing Pros",
-    category: "services",
-    region: "Barboursville",
-    description: "Family-owned plumbing service. 24/7 emergency support. Supporting local trades.",
-    image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&q=80&w=800",
-    rating: 4.9,
-    reviews: 88,
-    isLocalHero: true,
-    fundingGoal: 2000,
-    raised: 2000, // Fully funded
-    tags: ["Trade", "Essential", "Family Owned"]
-  },
-  {
-    id: 8,
-    name: "The Grind Espresso Bar",
-    category: "food",
-    region: "Huntington (WV)",
-    description: "Small batch roastery and espresso bar located in the heart of downtown.",
-    image: "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=800",
-    rating: 4.8,
-    reviews: 312,
-    isLocalHero: false,
-    fundingGoal: 0,
-    raised: 0,
-    tags: ["Coffee", "Wifi", "Pastries"]
-  }
-];
-
-const STORIES = [
-  { id: 1, user: "VisitHuntington", image: "https://images.unsplash.com/photo-1561655021-f3b14249a03e?auto=format&fit=crop&q=80&w=400", title: "Ritter Park" },
-  { id: 2, user: "AshlandEats", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=400", title: "BBQ Fest" },
-  { id: 3, user: "HikersOfWV", image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=400", title: "Fall Colors" },
-  { id: 4, user: "MadeInOH", image: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&q=80&w=400", title: "Pottery" },
-];
-
-/* --- COMPONENTS --- */
-
-const Navbar = ({ mode, setMode, cartCount }) => (
-  <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center h-16">
-        {/* Logo */}
-        <div className="flex items-center cursor-pointer" onClick={() => window.scrollTo(0,0)}>
-          <div className="bg-emerald-700 p-2 rounded-lg mr-2">
-            <Mountain className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Discover<span className="text-emerald-700">Tri-State</span></h1>
-            <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">WV • KY • OH</p>
-          </div>
-        </div>
-
-        {/* Desktop Menu */}
-        <div className="hidden md:flex items-center space-x-8">
-          <a href="#" className="text-slate-600 hover:text-emerald-700 font-medium transition-colors">Explore</a>
-          <a href="#" className="text-slate-600 hover:text-emerald-700 font-medium transition-colors">Events</a>
-          <a href="#" className="text-slate-600 hover:text-emerald-700 font-medium transition-colors">Our Story</a>
-          
-          <button 
-            onClick={() => setMode(mode === 'tourist' ? 'investor' : 'tourist')}
-            className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${
-              mode === 'investor' 
-                ? 'bg-slate-900 text-white shadow-lg' 
-                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-            }`}
-          >
-            {mode === 'tourist' ? <TrendingUp size={16}/> : <Users size={16}/>}
-            {mode === 'tourist' ? 'Investor Mode' : 'Visitor Mode'}
-          </button>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <div className="md:hidden flex items-center">
-          <Menu className="h-6 w-6 text-slate-600" />
-        </div>
-      </div>
-    </div>
-  </nav>
-);
-
-const Hero = ({ searchQuery, setSearchQuery }) => (
-  <div className="relative bg-slate-900 text-white overflow-hidden">
-    <div className="absolute inset-0">
-      <img 
-        src="https://images.unsplash.com/photo-1504609813442-a8924e83f76e?auto=format&fit=crop&q=80&w=1600" 
-        alt="Appalachian Mountains" 
-        className="w-full h-full object-cover opacity-50"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-    </div>
-
-    <div className="relative max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-      <span className="inline-block py-1 px-3 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-sm font-semibold mb-6 backdrop-blur-md">
-        Welcome Home
-      </span>
-      <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">
-        Explore the Hidden Gems<br />of <span className="text-emerald-400">Appalachia</span>
-      </h1>
-      <p className="text-lg md:text-xl text-slate-300 max-w-2xl mb-10">
-        Support local makers, discover unseen small businesses, and experience the revitalization of the Tri-State area.
-      </p>
-
-      {/* Search Bar */}
-      <div className="w-full max-w-2xl relative group">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-        </div>
-        <input
-          type="text"
-          className="block w-full pl-11 pr-4 py-4 rounded-xl border-0 ring-1 ring-white/20 bg-white/10 text-white placeholder-slate-300 focus:ring-2 focus:ring-emerald-500 focus:bg-white/20 backdrop-blur-sm transition-all shadow-lg"
-          placeholder="Search for bbq, pottery, trails, or services..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-    </div>
-  </div>
-);
-
-const RegionFilter = ({ selectedRegion, setSelectedRegion }) => (
-  <div className="bg-white border-b border-slate-100 py-4 sticky top-16 z-40 shadow-sm">
-    <div className="max-w-7xl mx-auto px-4 overflow-x-auto no-scrollbar">
-      <div className="flex space-x-2">
-        {REGIONS.map((region) => (
-          <button
-            key={region}
-            onClick={() => setSelectedRegion(region)}
-            className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              selectedRegion === region
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            {region}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
-const CategoryFilter = ({ selectedCategory, setSelectedCategory }) => (
-  <div className="py-8 bg-slate-50">
-    <div className="max-w-7xl mx-auto px-4">
-      <h3 className="text-slate-900 font-bold mb-4 text-lg">Browse by Category</h3>
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-        {CATEGORIES.map((cat) => {
-          const Icon = cat.icon;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-200 border ${
-                selectedCategory === cat.id
-                  ? 'bg-white border-emerald-500 shadow-lg scale-105'
-                  : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'
-              }`}
-            >
-              <Icon className={`h-6 w-6 mb-2 ${selectedCategory === cat.id ? 'text-emerald-600' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${selectedCategory === cat.id ? 'text-slate-900' : 'text-slate-500'}`}>
-                {cat.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  </div>
-);
-
-const ListingCard = ({ listing, mode }) => {
-  const percentFunded = Math.min(100, Math.round((listing.raised / listing.fundingGoal) * 100));
-
-  return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full">
-      <div className="relative h-48 overflow-hidden">
-        <img 
-          src={listing.image} 
-          alt={listing.name} 
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute top-3 right-3 flex gap-2">
-           <button className="p-2 rounded-full bg-white/90 text-slate-400 hover:text-red-500 transition-colors shadow-sm backdrop-blur-sm">
-            <Heart className="h-4 w-4" />
-          </button>
-        </div>
+        /* --- SCOUTED REAL DATA --- */
+        const REGIONS = ["All Areas", "Huntington (WV)", "Ashland (KY)", "Ironton (OH)", "Barboursville", "Wayne", "Milton"];
         
-        {listing.isLocalHero && (
-          <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
-            <Award className="h-3 w-3" />
-            LOCAL HERO
-          </div>
-        )}
+        const CATEGORIES = [
+            { id: 'all', label: 'All', icon: TrendingUp },
+            { id: 'food', label: 'Food & Drink', icon: Coffee },
+            { id: 'adventure', label: 'Adventure', icon: Mountain },
+            { id: 'culture', label: 'Culture & Arts', icon: Music },
+            { id: 'experiences', label: 'Makers & Classes', icon: Hammer },
+            { id: 'services', label: 'Local Services', icon: Wrench },
+        ];
 
-        <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1">
-          <MapPin className="h-3 w-3" />
-          {listing.region}
-        </div>
-      </div>
+        // REAL Tri-State Businesses (Expanded to 50 Listings)
+        const INITIAL_LISTINGS = [
+            // --- ORIGINAL TOP 10 ---
+            { 
+                id: 1, 
+                name: "The Peddler", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "A hub for craft beer and classic arcade games in the heart of Huntington. Famous for smash burgers and house-brewed ales.", 
+                image: "https://images.unsplash.com/photo-1574966739987-65e38a0b06b3?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 450, 
+                isLocalHero: true, 
+                fundingGoal: 10000, 
+                raised: 8500, 
+                tags: ["Brewery", "Arcade", "Nightlife"] 
+            },
+            { 
+                id: 2, 
+                name: "Blenko Glass Company", 
+                category: "experiences", 
+                region: "Milton", 
+                description: "Hand-blown glass since 1893. Take a workshop, tour the factory floor, and blow your own iconic water bottle.", 
+                image: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 1240, 
+                isLocalHero: true, 
+                fundingGoal: 5000, 
+                raised: 4200, 
+                tags: ["Historic", "Maker", "Tours"] 
+            },
+            { 
+                id: 3, 
+                name: "The Mill", 
+                category: "food", 
+                region: "Ashland (KY)", 
+                description: "Artisan bakery and cafe in a beautifully restored building. The go-to spot for brunch and fresh pastries.", 
+                image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 320, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Bakery", "Brunch", "Coffee"] 
+            },
+            { 
+                id: 4, 
+                name: "Austin's Homemade Ice Cream", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "A local legend since 1947. Serving hand-made ice cream with famous flavors like Grape Pineapple.", 
+                image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 2100, 
+                isLocalHero: true, 
+                fundingGoal: 2500, 
+                raised: 2500, 
+                tags: ["Dessert", "Family Owned", "Historic"] 
+            },
+            { 
+                id: 5, 
+                name: "The Shake Shoppe", 
+                category: "food", 
+                region: "Ironton (OH)", 
+                description: "Home of the famous 'Nutburger'. An Ironton staple serving classic diner fare and shakes for generations.", 
+                image: "https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 856, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Diner", "Retro", "Cheap Eats"] 
+            },
+            { 
+                id: 6, 
+                name: "Hatfield-McCoy ATV Trails", 
+                category: "adventure", 
+                region: "Wayne", 
+                description: "World-class off-road trails winding through the rugged Appalachian mountains. A true bucket-list adventure.", 
+                image: "https://images.unsplash.com/photo-1599407360228-5b43d7890f5d?auto=format&fit=crop&q=80&w=800",
+                rating: 5.0, 
+                reviews: 3200, 
+                isLocalHero: true, 
+                fundingGoal: 15000, 
+                raised: 12500, 
+                tags: ["Outdoors", "Extreme", "Rentals"] 
+            },
+            { 
+                id: 7, 
+                name: "Paramount Arts Center", 
+                category: "culture", 
+                region: "Ashland (KY)", 
+                description: "Historic theater hosting concerts, plays, and community events in a restored 1930s venue.", 
+                image: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 420, 
+                isLocalHero: true, 
+                fundingGoal: 8000, 
+                raised: 1500, 
+                tags: ["History", "Live Music", "Non-Profit"] 
+            },
+            { 
+                id: 8, 
+                name: "Heritage Farm Museum", 
+                category: "culture", 
+                region: "Huntington (WV)", 
+                description: "An Appalachian village museum showcasing pioneer life, industry, and petting zoos.", 
+                image: "https://images.unsplash.com/photo-1444858291040-58f756a3bdd6?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 1100, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Education", "Nature", "Museum"] 
+            },
+            { 
+                id: 9, 
+                name: "Backyard Pizza & Raw Bar", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "Wood-fired pizzas and fresh oysters in a rustic-chic setting. A favorite for dinner and craft cocktails.", 
+                image: "https://images.unsplash.com/photo-1574126154517-d1e0d89e7344?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 650, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Pizza", "Date Night", "Craft Beer"] 
+            },
+            { 
+                id: 10, 
+                name: "Stewart's Original Hot Dogs", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "A Tri-State staple since 1932. Legendary hot dogs and root beer served curbside.", 
+                image: "https://images.unsplash.com/photo-1619740455993-9e612b4af62a?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 900, 
+                isLocalHero: true, 
+                fundingGoal: 2000, 
+                raised: 2000, 
+                tags: ["Classic", "Drive-in", "Cheap Eats"] 
+            },
 
-      <div className="p-5 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <span className="text-emerald-600 text-xs font-bold uppercase tracking-wider">{listing.category}</span>
-            <h3 className="text-lg font-bold text-slate-900 leading-tight mt-1">{listing.name}</h3>
-          </div>
-          <div className="flex items-center bg-amber-50 px-1.5 py-0.5 rounded text-amber-700">
-            <Star className="h-3 w-3 fill-current mr-1" />
-            <span className="text-xs font-bold">{listing.rating}</span>
-          </div>
-        </div>
+            // --- HUNTINGTON EXPANSION ---
+            { 
+                id: 11, 
+                name: "Black Sheep Burrito & Brews", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "Eclectic burritos and craft brews in a hip, industrial setting near Pullman Square.", 
+                image: "https://images.unsplash.com/photo-1566740933430-b555932909f1?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 1500, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Mexican Fusion", "Craft Beer", "Dinner"] 
+            },
+            { 
+                id: 12, 
+                name: "Keith Albee Performing Arts Center", 
+                category: "culture", 
+                region: "Huntington (WV)", 
+                description: "A breathtaking 1928 movie palace. One of the most beautiful atmospheric theaters in the United States.", 
+                image: "https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 800, 
+                isLocalHero: true, 
+                fundingGoal: 25000, 
+                raised: 12000, 
+                tags: ["Historic", "Architecture", "Cinema"] 
+            },
+            { 
+                id: 13, 
+                name: "Hillbilly Hot Dogs", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "Famous rustic roadside stop featured on 'Diners, Drive-Ins and Dives'. Sign your name on the wall!", 
+                image: "https://images.unsplash.com/photo-1527780076214-41d34c1b9793?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 3500, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Tourist Spot", "Casual", "Experience"] 
+            },
+            { 
+                id: 14, 
+                name: "Ritter Park", 
+                category: "adventure", 
+                region: "Huntington (WV)", 
+                description: "The crown jewel of Huntington. Walking trails, rose gardens, and a massive playground in the city center.", 
+                image: "https://images.unsplash.com/photo-1496347315686-5f274d0185f0?auto=format&fit=crop&q=80&w=800",
+                rating: 5.0, 
+                reviews: 1100, 
+                isLocalHero: true, 
+                fundingGoal: 5000, 
+                raised: 4500, 
+                tags: ["Nature", "Free", "Family"] 
+            },
+            { 
+                id: 15, 
+                name: "Sip Wine & Whiskey Bar", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "Sophisticated lounge offering an extensive selection of wines, whiskeys, and tapas.", 
+                image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 240, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Date Night", "Wine", "Upscale"] 
+            },
+            { 
+                id: 16, 
+                name: "Heritage Station", 
+                category: "experiences", 
+                region: "Huntington (WV)", 
+                description: "A converted B&O Railway station turned into a shopping village with artisan shops and a bakery.", 
+                image: "https://images.unsplash.com/photo-1474487548417-781cb714c22d?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 600, 
+                isLocalHero: true, 
+                fundingGoal: 1000, 
+                raised: 1000, 
+                tags: ["Shopping", "Historic", "Local Goods"] 
+            },
+            { 
+                id: 17, 
+                name: "Camden Park", 
+                category: "adventure", 
+                region: "Huntington (WV)", 
+                description: "West Virginia's only amusement park. Home of the Big Dipper and the Haunted House.", 
+                image: "https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?auto=format&fit=crop&q=80&w=800",
+                rating: 4.4, 
+                reviews: 950, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Family", "Amusement Park", "Seasonal"] 
+            },
+            { 
+                id: 18, 
+                name: "Museum of Radio & Technology", 
+                category: "culture", 
+                region: "Huntington (WV)", 
+                description: "One of the largest collections of antique radios and broadcasting equipment in the world.", 
+                image: "https://images.unsplash.com/photo-1551529834-525807d6b4f3?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 150, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Museum", "Tech", "History"] 
+            },
 
-        <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1">
-          {listing.description}
-        </p>
-        
-        <div className="flex flex-wrap gap-1 mb-4">
-          {listing.tags.map(tag => (
-            <span key={tag} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">
-              {tag}
-            </span>
-          ))}
-        </div>
+            // --- ASHLAND EXPANSION ---
+            { 
+                id: 19, 
+                name: "Highlands Museum & Discovery Center", 
+                category: "culture", 
+                region: "Ashland (KY)", 
+                description: "Interactive exhibits on Appalachian music, history, and science. Great for kids and history buffs.", 
+                image: "https://images.unsplash.com/photo-1566054757965-8c537633e707?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 300, 
+                isLocalHero: true, 
+                fundingGoal: 5000, 
+                raised: 1200, 
+                tags: ["Family", "Education", "Music"] 
+            },
+            { 
+                id: 20, 
+                name: "Central Park", 
+                category: "adventure", 
+                region: "Ashland (KY)", 
+                description: "Large urban park featuring ancient Indian mounds, ponds, and walking trails.", 
+                image: "https://images.unsplash.com/photo-1500964757637-c85e8a162699?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 500, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Nature", "History", "Free"] 
+            },
+            { 
+                id: 21, 
+                name: "Camp Landing Entertainment District", 
+                category: "experiences", 
+                region: "Ashland (KY)", 
+                description: "Massive entertainment complex with a cinema, arcade, bowling, and sports bar.", 
+                image: "https://images.unsplash.com/photo-1511882150382-421056ac8d89?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 700, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Entertainment", "Movies", "Bowling"] 
+            },
+            { 
+                id: 22, 
+                name: "Bombshells & Ales", 
+                category: "food", 
+                region: "Ashland (KY)", 
+                description: "BBQ, Burgers, and Beer in a lively atmosphere. A great spot to watch the game.", 
+                image: "https://images.unsplash.com/photo-1529042410759-befb1204b468?auto=format&fit=crop&q=80&w=800",
+                rating: 4.5, 
+                reviews: 400, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["BBQ", "Sports Bar", "Dinner"] 
+            },
 
-        {mode === 'investor' && listing.fundingGoal > 0 ? (
-          <div className="bg-slate-50 rounded-xl p-3 mb-4 border border-slate-100">
-            <div className="flex justify-between text-xs mb-1">
-              <span className="font-semibold text-slate-700">Community Growth Fund</span>
-              <span className="text-emerald-600 font-bold">{percentFunded}%</span>
-            </div>
-            <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2">
-              <div 
-                className="bg-emerald-500 h-1.5 rounded-full transition-all duration-1000" 
-                style={{ width: `${percentFunded}%` }}
-              />
-            </div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-500">${listing.raised.toLocaleString()} raised</span>
-              <span className="text-slate-400">Goal: ${listing.fundingGoal.toLocaleString()}</span>
-            </div>
-          </div>
-        ) : null}
+            // --- IRONTON EXPANSION ---
+            { 
+                id: 23, 
+                name: "The Vault Market", 
+                category: "experiences", 
+                region: "Ironton (OH)", 
+                description: "A unique marketplace located inside a historic bank building, featuring local vendors and makers.", 
+                image: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 120, 
+                isLocalHero: true, 
+                fundingGoal: 3000, 
+                raised: 2800, 
+                tags: ["Shop Small", "Makers", "Historic"] 
+            },
+            { 
+                id: 24, 
+                name: "Armory Smokehouse", 
+                category: "food", 
+                region: "Ironton (OH)", 
+                description: "Authentic smoked meats and homestyle sides served in a renovated armory building.", 
+                image: "https://images.unsplash.com/photo-1529193591184-b1d580690dd0?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 350, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["BBQ", "Lunch", "Dinner"] 
+            },
+            { 
+                id: 25, 
+                name: "The Depot", 
+                category: "food", 
+                region: "Ironton (OH)", 
+                description: "Fine dining with an Italian flair located in the historic N&W Train Depot.", 
+                image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 200, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Italian", "Historic", "Date Night"] 
+            },
 
-        <div className="mt-auto pt-4 border-t border-slate-100 flex gap-3">
-          <button className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
-            {listing.category === 'services' ? 'Book Service' : 'Details'}
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+            // --- BARBOURSVILLE EXPANSION ---
+            { 
+                id: 26, 
+                name: "Barboursville Park", 
+                category: "adventure", 
+                region: "Barboursville", 
+                description: "Expansive park with fishing lakes, soccer fields, and miles of hiking trails.", 
+                image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 600, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Outdoors", "Sports", "Nature"] 
+            },
+            { 
+                id: 27, 
+                name: "1861 Public House", 
+                category: "food", 
+                region: "Barboursville", 
+                description: "Upscale pub fare and craft cocktails in the heart of the village.", 
+                image: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 180, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Cocktails", "Pub", "Dinner"] 
+            },
+            { 
+                id: 28, 
+                name: "Oscar's Breakfast, Burgers & Brews", 
+                category: "food", 
+                region: "Barboursville", 
+                description: "The name says it all. Massive burgers and great breakfast options.", 
+                image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 400, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Burgers", "Breakfast", "Casual"] 
+            },
 
-const StoriesSection = () => (
-  <div className="py-12 bg-white">
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="flex justify-between items-end mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-900">Live from the Tri-State</h2>
-          <p className="text-slate-500 text-sm mt-1">Real experiences from locals and visitors</p>
-        </div>
-        <a href="#" className="text-emerald-600 text-sm font-semibold hover:underline">View all</a>
-      </div>
-      
-      <div className="flex space-x-4 overflow-x-auto pb-4 no-scrollbar">
-        {STORIES.map((story) => (
-          <div key={story.id} className="flex-shrink-0 relative group cursor-pointer w-32 md:w-40">
-            <div className="aspect-[9/16] rounded-2xl overflow-hidden relative border-2 border-white shadow-lg ring-2 ring-emerald-500/30">
-              <img 
-                src={story.image} 
-                alt={story.title}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <div className="absolute bottom-3 left-3">
-                <p className="text-white text-xs font-bold">{story.user}</p>
-                <p className="text-white/80 text-[10px]">{story.title}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
+            // --- WAYNE & BEYOND ---
+            { 
+                id: 29, 
+                name: "Beech Fork State Park", 
+                category: "adventure", 
+                region: "Wayne", 
+                description: "A 3,000-acre park offering camping, boating, and wildlife viewing.", 
+                image: "https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 800, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Camping", "Lake", "Hiking"] 
+            },
+            { 
+                id: 30, 
+                name: "Griffith & Feil Drug Store", 
+                category: "food", 
+                region: "Wayne", // Actually Kenova/Wayne area
+                description: "Step back in time at this authentic 1920s soda fountain and pharmacy.", 
+                image: "https://images.unsplash.com/photo-1559187320-f4b505963571?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 300, 
+                isLocalHero: true, 
+                fundingGoal: 1000, 
+                raised: 500, 
+                tags: ["Historic", "Soda Fountain", "Lunch"] 
+            },
 
-const ImpactDashboard = () => (
-  <div className="bg-slate-900 text-white py-16">
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <span className="text-emerald-400 font-bold tracking-wider text-sm uppercase mb-2 block">Economic Revitalization</span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Invest in Hometown Pride</h2>
-          <p className="text-slate-300 mb-8 leading-relaxed">
-            Discover Tri-State isn't just a guide; it's a movement. By supporting local makers and small businesses, 
-            you are directly contributing to the economic renaissance of West Virginia, Kentucky, and Ohio.
-          </p>
-          
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
-              <DollarSign className="h-8 w-8 text-emerald-400 mb-4" />
-              <div className="text-3xl font-bold text-white mb-1">$420K</div>
-              <div className="text-slate-400 text-sm">Generated for Small Biz</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
-              <Users className="h-8 w-8 text-blue-400 mb-4" />
-              <div className="text-3xl font-bold text-white mb-1">12,500</div>
-              <div className="text-slate-400 text-sm">Active Supporters</div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="relative">
-          <div className="absolute -inset-4 bg-emerald-500/20 blur-2xl rounded-full"></div>
-          <div className="relative bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl">
-            <h3 className="font-bold text-lg mb-6">Top Funded Projects</h3>
-            <div className="space-y-6">
-              {[
-                { name: "Downtown Ironton Murals", amt: "85%", col: "bg-emerald-500" },
-                { name: "Ashland Riverfront Park", amt: "62%", col: "bg-blue-500" },
-                { name: "WV Maker's Co-op", amt: "44%", col: "bg-amber-500" }
-              ].map((proj, i) => (
-                <div key={i}>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-slate-200">{proj.name}</span>
-                    <span className="font-bold">{proj.amt}</span>
-                  </div>
-                  <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
-                    <div className={`h-full ${proj.col}`} style={{ width: proj.amt }}></div>
-                  </div>
+            // --- SERVICES (To flesh out the category) ---
+            { 
+                id: 31, 
+                name: "River Cities Auto Repair", 
+                category: "services", 
+                region: "Ironton (OH)", 
+                description: "Trusted local mechanics specializing in domestic and foreign vehicles.", 
+                image: "https://images.unsplash.com/photo-1625047509168-a7026f36de04?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 150, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Mechanic", "Auto", "Repair"] 
+            },
+            { 
+                id: 32, 
+                name: "Reliable Roots Plumbing", 
+                category: "services", 
+                region: "Huntington (WV)", 
+                description: "24/7 Emergency plumbing services. Family owned and operated.", 
+                image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 85, 
+                isLocalHero: true, 
+                fundingGoal: 500, 
+                raised: 500, 
+                tags: ["Plumber", "Emergency", "Trade"] 
+            },
+            { 
+                id: 33, 
+                name: "Tri-State Airport (HTS)", 
+                category: "services", 
+                region: "Wayne", // Located in Ceredo/Wayne area
+                description: "Fly local. Connecting the Tri-State to the world with flights to Charlotte and Orlando.", 
+                image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&q=80&w=800",
+                rating: 4.5, 
+                reviews: 200, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Travel", "Airport", "Transport"] 
+            },
+            { 
+                id: 34, 
+                name: "Grindstone Coffeeology", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "The best drive-thru coffee in town. Fast service and strong espresso.", 
+                image: "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 300, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Coffee", "Drive-thru", "Breakfast"] 
+            },
+            { 
+                id: 35, 
+                name: "Marshall University", 
+                category: "culture", 
+                region: "Huntington (WV)", 
+                description: "The thundering heart of Huntington. Home of the Thundering Herd. Go Herd!", 
+                image: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=800",
+                rating: 5.0, 
+                reviews: 5000, 
+                isLocalHero: true, 
+                fundingGoal: 100000, 
+                raised: 85000, 
+                tags: ["Education", "Sports", "Community"] 
+            },
+            
+            // --- NEW ADDITIONS (36-50) ---
+            { 
+                id: 36, 
+                name: "Huntington Museum of Art", 
+                category: "culture", 
+                region: "Huntington (WV)", 
+                description: "A nationally accredited art museum nestled on 52 acres of nature trails. Famous for its Gropius addition.", 
+                image: "https://images.unsplash.com/photo-1566954979172-2c94c0d90ef5?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 700, 
+                isLocalHero: true, 
+                fundingGoal: 15000, 
+                raised: 12000, 
+                tags: ["Art", "Hiking", "Museum"] 
+            },
+            { 
+                id: 37, 
+                name: "Bahnhof WV", 
+                category: "food", 
+                region: "Barboursville", 
+                description: "Authentic German beer hall cuisine including giant pretzels, schnitzel, and German drafts.", 
+                image: "https://images.unsplash.com/photo-1571407921200-d856d2b450e9?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 800, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["German", "Beer Hall", "Dinner"] 
+            },
+            { 
+                id: 38, 
+                name: "The Ro-Na Theater", 
+                category: "culture", 
+                region: "Ironton (OH)", 
+                description: "A beautifully restored historic theater hosting community events, markets, and concerts.", 
+                image: "https://images.unsplash.com/photo-1516307010795-314115e580a6?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 150, 
+                isLocalHero: true, 
+                fundingGoal: 10000, 
+                raised: 8500, 
+                tags: ["Historic", "Events", "Community"] 
+            },
+            { 
+                id: 39, 
+                name: "Rocco's Ristorante", 
+                category: "food", 
+                region: "Wayne", // Ceredo/Kenova
+                description: "An upscale Italian landmark famous for its lasagna and extensive wine list. A local tradition.", 
+                image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 1200, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Italian", "Fine Dining", "Wine"] 
+            },
+            { 
+                id: 40, 
+                name: "Fat Patty's", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "The ultimate burger joint for Marshall students and locals. Famous for unique burger toppings.", 
+                image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 2000, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Burgers", "University", "Casual"] 
+            },
+            { 
+                id: 41, 
+                name: "West Virginia Pumpkin Park", 
+                category: "experiences", 
+                region: "Milton", 
+                description: "Home of the famous WV Pumpkin Festival. A sprawling park hosting major events year-round.", 
+                image: "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 1500, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Festival", "Events", "Family"] 
+            },
+            { 
+                id: 42, 
+                name: "Tanyard Station", 
+                category: "experiences", 
+                region: "Barboursville", 
+                description: "A historic railway site revitalized into a modern shopping and dining destination.", 
+                image: "https://images.unsplash.com/photo-1555529733-0e670560f7e1?auto=format&fit=crop&q=80&w=800",
+                rating: 4.5, 
+                reviews: 500, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Shopping", "Modern", "Dining"] 
+            },
+            { 
+                id: 43, 
+                name: "St. Cloud Commons", 
+                category: "adventure", 
+                region: "Huntington (WV)", 
+                description: "Features the region's first inclusive playground, a lodge for events, and baseball fields.", 
+                image: "https://images.unsplash.com/photo-1563841930606-67e2bce48b78?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 300, 
+                isLocalHero: true, 
+                fundingGoal: 2000, 
+                raised: 2000, 
+                tags: ["Park", "Inclusive", "Family"] 
+            },
+            { 
+                id: 44, 
+                name: "Jewel City Seafood", 
+                category: "food", 
+                region: "Huntington (WV)", 
+                description: "Fresh seafood market and lunch spot. Known for the best fish sandwiches in town.", 
+                image: "https://images.unsplash.com/photo-1519708227418-c8fd9a3a277d?auto=format&fit=crop&q=80&w=800",
+                rating: 4.8, 
+                reviews: 600, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Seafood", "Market", "Lunch"] 
+            },
+            { 
+                id: 45, 
+                name: "Main Street on Central", 
+                category: "experiences", 
+                region: "Barboursville", 
+                description: "A charming collection of local boutiques and shops in the heart of historic Barboursville.", 
+                image: "https://images.unsplash.com/photo-1519642918688-7e43b19245d8?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 100, 
+                isLocalHero: true, 
+                fundingGoal: 500, 
+                raised: 500, 
+                tags: ["Shopping", "Boutique", "Local"] 
+            },
+            { 
+                id: 46, 
+                name: "Old Central City", 
+                category: "experiences", 
+                region: "Huntington (WV)", 
+                description: "The antique capital of the Tri-State. Browse dozens of shops rich with history and hidden treasures.", 
+                image: "https://images.unsplash.com/photo-1560943960-a299387cb46f?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 400, 
+                isLocalHero: true, 
+                fundingGoal: 1000, 
+                raised: 800, 
+                tags: ["Antiques", "History", "Shopping"] 
+            },
+            { 
+                id: 47, 
+                name: "Giovanni's Pizza", 
+                category: "food", 
+                region: "Ironton (OH)", 
+                description: "An iconic regional chain. The Coal Grove/Ironton locations are legendary for their buffet and subs.", 
+                image: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&q=80&w=800",
+                rating: 4.5, 
+                reviews: 1000, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Pizza", "Regional", "Buffet"] 
+            },
+            { 
+                id: 48, 
+                name: "Bowen Lake", 
+                category: "adventure", 
+                region: "Huntington (WV)", 
+                description: "A peaceful 800-acre lake perfect for fishing, kayaking, and hiking away from the city noise.", 
+                image: "https://images.unsplash.com/photo-1543160882-72c011e031a0?auto=format&fit=crop&q=80&w=800",
+                rating: 4.7, 
+                reviews: 250, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Nature", "Lake", "Fishing"] 
+            },
+            { 
+                id: 49, 
+                name: "Bison Landscaping", 
+                category: "services", 
+                region: "Huntington (WV)", 
+                description: "Top-rated local landscaping and hardscaping service helping beautify the Tri-State.", 
+                image: "https://images.unsplash.com/photo-1558904541-efa843a96f01?auto=format&fit=crop&q=80&w=800",
+                rating: 4.9, 
+                reviews: 80, 
+                isLocalHero: true, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Trade", "Home", "Garden"] 
+            },
+            { 
+                id: 50, 
+                name: "Pullman Square", 
+                category: "experiences", 
+                region: "Huntington (WV)", 
+                description: "The downtown lifestyle center. Movies, bookstores, comedy clubs, and dining all in one walkable block.", 
+                image: "https://images.unsplash.com/photo-1519567241046-7f570eee3d9f?auto=format&fit=crop&q=80&w=800",
+                rating: 4.6, 
+                reviews: 3000, 
+                isLocalHero: false, 
+                fundingGoal: 0, 
+                raised: 0, 
+                tags: ["Downtown", "Cinema", "Shopping"] 
+            }
+        ];
+
+        const STORIES = [
+            { id: 1, user: "VisitHuntington", image: "https://images.unsplash.com/photo-1561655021-f3b14249a03e?auto=format&fit=crop&q=80&w=400", title: "Ritter Park" },
+            { id: 2, user: "AshlandEats", image: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=400", title: "BBQ Fest" },
+            { id: 3, user: "HikersOfWV", image: "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&q=80&w=400", title: "Fall Colors" },
+            { id: 4, user: "MadeInOH", image: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?auto=format&fit=crop&q=80&w=400", title: "Pottery" },
+        ];
+
+        /* --- COMPONENTS --- */
+
+        const Navbar = ({ mode, setMode }) => (
+            <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center cursor-pointer" onClick={() => window.scrollTo(0,0)}>
+                            <div className="bg-emerald-700 p-2 rounded-lg mr-2">
+                                <Mountain className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Discover<span className="text-emerald-700">Tri-State</span></h1>
+                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">WV • KY • OH</p>
+                            </div>
+                        </div>
+                        <div className="hidden md:flex items-center space-x-8">
+                            <a href="#" className="text-slate-600 hover:text-emerald-700 font-medium transition-colors">Explore</a>
+                            <a href="#" className="text-slate-600 hover:text-emerald-700 font-medium transition-colors">Events</a>
+                            <button onClick={() => setMode(mode === 'tourist' ? 'investor' : 'tourist')} className={`px-4 py-2 rounded-full font-semibold text-sm transition-all duration-300 flex items-center gap-2 ${mode === 'investor' ? 'bg-slate-900 text-white shadow-lg' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                                {mode === 'tourist' ? <TrendingUp size={16}/> : <Users size={16}/>}
+                                {mode === 'tourist' ? 'Investor Mode' : 'Visitor Mode'}
+                            </button>
+                        </div>
+                        <div className="md:hidden flex items-center"><Menu className="h-6 w-6 text-slate-600" /></div>
+                    </div>
                 </div>
-              ))}
+            </nav>
+        );
+
+        const Hero = ({ searchQuery, setSearchQuery }) => (
+            <div className="relative bg-slate-900 text-white overflow-hidden">
+                <div className="absolute inset-0">
+                    <img src="https://images.unsplash.com/photo-1504609813442-a8924e83f76e?auto=format&fit=crop&q=80&w=1600" alt="Appalachian Mountains" className="w-full h-full object-cover opacity-50" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                </div>
+                <div className="relative max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+                    <span className="inline-block py-1 px-3 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-sm font-semibold mb-6 backdrop-blur-md">Welcome Home</span>
+                    <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6">Explore the Hidden Gems<br />of <span className="text-emerald-400">Appalachia</span></h1>
+                    <p className="text-lg md:text-xl text-slate-300 max-w-2xl mb-10">Support local makers, discover unseen small businesses, and experience the revitalization of the Tri-State area.</p>
+                    <div className="w-full max-w-2xl relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Search className="h-5 w-5 text-slate-400" /></div>
+                        <input type="text" className="block w-full pl-11 pr-4 py-4 rounded-xl border-0 ring-1 ring-white/20 bg-white/10 text-white placeholder-slate-300 focus:ring-2 focus:ring-emerald-500 focus:bg-white/20 backdrop-blur-sm transition-all shadow-lg" placeholder="Search for bbq, pottery, trails, or services..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+                </div>
             </div>
-            <button className="w-full mt-8 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold transition-colors">
-              View Investment Opportunities
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+        );
 
-const Footer = () => (
-  <footer className="bg-white border-t border-slate-200 py-12">
-    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-      <div className="col-span-1 md:col-span-1">
-        <div className="flex items-center mb-4">
-          <div className="bg-emerald-700 p-1.5 rounded-lg mr-2">
-            <Mountain className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-lg font-bold text-slate-900">Discover<span className="text-emerald-700">Tri-State</span></span>
-        </div>
-        <p className="text-slate-500 text-sm">
-          Connecting you to the heart of Appalachia. Made with pride in Huntington, WV.
-        </p>
-      </div>
-      
-      <div>
-        <h4 className="font-bold text-slate-900 mb-4">Discover</h4>
-        <ul className="space-y-2 text-sm text-slate-500">
-          <li><a href="#" className="hover:text-emerald-600">Eat & Drink</a></li>
-          <li><a href="#" className="hover:text-emerald-600">Places to Stay</a></li>
-          <li><a href="#" className="hover:text-emerald-600">Adventures</a></li>
-          <li><a href="#" className="hover:text-emerald-600">Local Events</a></li>
-        </ul>
-      </div>
-      
-      <div>
-        <h4 className="font-bold text-slate-900 mb-4">Community</h4>
-        <ul className="space-y-2 text-sm text-slate-500">
-          <li><a href="#" className="hover:text-emerald-600">Add Your Business</a></li>
-          <li><a href="#" className="hover:text-emerald-600">Investor Portal</a></li>
-          <li><a href="#" className="hover:text-emerald-600">Local Hero Badge</a></li>
-        </ul>
-      </div>
-      
-      <div>
-        <h4 className="font-bold text-slate-900 mb-4">Stay in the Loop</h4>
-        <div className="flex">
-          <input type="email" placeholder="Email address" className="bg-slate-50 border border-slate-200 rounded-l-lg px-4 py-2 text-sm w-full focus:outline-none focus:border-emerald-500" />
-          <button className="bg-slate-900 text-white px-4 py-2 rounded-r-lg text-sm hover:bg-slate-800">
-            Join
-          </button>
-        </div>
-      </div>
-    </div>
-    <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-slate-100 text-center text-slate-400 text-sm">
-      &copy; 2024 Discover Tri-State. All rights reserved.
-    </div>
-  </footer>
-);
+        const ListingCard = ({ listing, mode }) => {
+            const percentFunded = Math.min(100, Math.round((listing.raised / listing.fundingGoal) * 100));
+            return (
+                <div className="group bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col h-full">
+                    <div className="relative h-48 overflow-hidden">
+                        <img src={listing.image} alt={listing.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute top-3 right-3 flex gap-2"><button className="p-2 rounded-full bg-white/90 text-slate-400 hover:text-red-500 transition-colors shadow-sm backdrop-blur-sm"><Heart className="h-4 w-4" /></button></div>
+                        {listing.isLocalHero && <div className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1"><Award className="h-3 w-3" /> LOCAL HERO</div>}
+                        <div className="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1"><MapPin className="h-3 w-3" /> {listing.region}</div>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col">
+                        <div className="flex justify-between items-start mb-2">
+                            <div><span className="text-emerald-600 text-xs font-bold uppercase tracking-wider">{listing.category}</span><h3 className="text-lg font-bold text-slate-900 leading-tight mt-1">{listing.name}</h3></div>
+                            <div className="flex items-center bg-amber-50 px-1.5 py-0.5 rounded text-amber-700"><Star className="h-3 w-3 fill-current mr-1" /><span className="text-xs font-bold">{listing.rating}</span></div>
+                        </div>
+                        <p className="text-slate-500 text-sm line-clamp-2 mb-4 flex-1">{listing.description}</p>
+                        <div className="flex flex-wrap gap-1 mb-4">{listing.tags.map(tag => <span key={tag} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">{tag}</span>)}</div>
+                        {mode === 'investor' && listing.fundingGoal > 0 && (
+                            <div className="bg-slate-50 rounded-xl p-3 mb-4 border border-slate-100">
+                                <div className="flex justify-between text-xs mb-1"><span className="font-semibold text-slate-700">Community Growth Fund</span><span className="text-emerald-600 font-bold">{percentFunded}%</span></div>
+                                <div className="w-full bg-slate-200 rounded-full h-1.5 mb-2"><div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${percentFunded}%` }} /></div>
+                                <div className="flex justify-between items-center text-xs"><span className="text-slate-500">${listing.raised.toLocaleString()} raised</span><span className="text-slate-400">Goal: ${listing.fundingGoal.toLocaleString()}</span></div>
+                            </div>
+                        )}
+                        <div className="mt-auto pt-4 border-t border-slate-100 flex gap-3">
+                            <button className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+                                {listing.category === 'services' ? 'Book Service' : 'Details'} <ArrowRight className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
-/* --- MAIN APP --- */
+        const App = () => {
+            const [mode, setMode] = useState('tourist');
+            const [selectedRegion, setSelectedRegion] = useState('All Areas');
+            const [selectedCategory, setSelectedCategory] = useState('all');
+            const [searchQuery, setSearchQuery] = useState('');
 
-const App = () => {
-  const [mode, setMode] = useState('tourist'); // 'tourist' or 'investor'
-  const [selectedRegion, setSelectedRegion] = useState('All Areas');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+            const filteredListings = useMemo(() => {
+                return INITIAL_LISTINGS.filter(listing => {
+                    const matchesRegion = selectedRegion === 'All Areas' || listing.region === selectedRegion;
+                    const matchesCategory = selectedCategory === 'all' || listing.category === selectedCategory;
+                    const matchesSearch = listing.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                        listing.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                        listing.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+                    return matchesRegion && matchesCategory && matchesSearch;
+                });
+            }, [selectedRegion, selectedCategory, searchQuery]);
 
-  // Filtering Logic
-  const filteredListings = useMemo(() => {
-    return INITIAL_LISTINGS.filter(listing => {
-      const matchesRegion = selectedRegion === 'All Areas' || listing.region === selectedRegion;
-      const matchesCategory = selectedCategory === 'all' || listing.category === selectedCategory;
-      const matchesSearch = listing.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          listing.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          listing.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchesRegion && matchesCategory && matchesSearch;
-    });
-  }, [selectedRegion, selectedCategory, searchQuery]);
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+                    <Navbar mode={mode} setMode={setMode} />
+                    <Hero searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+                    
+                    <div className="bg-white border-b border-slate-100 py-4 sticky top-16 z-40 shadow-sm">
+                        <div className="max-w-7xl mx-auto px-4 overflow-x-auto no-scrollbar">
+                            <div className="flex space-x-2">
+                                {REGIONS.map((region) => (
+                                    <button key={region} onClick={() => setSelectedRegion(region)} className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedRegion === region ? 'bg-slate-900 text-white shadow-md' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>{region}</button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="py-8 bg-slate-50">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <h3 className="text-slate-900 font-bold mb-4 text-lg">Browse by Category</h3>
+                            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+                                {CATEGORIES.map((cat) => {
+                                    const Icon = cat.icon;
+                                    return <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={`flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-200 border ${selectedCategory === cat.id ? 'bg-white border-emerald-500 shadow-lg scale-105' : 'bg-white border-slate-200 hover:border-emerald-300 hover:shadow-md'}`}><Icon className={`h-6 w-6 mb-2 ${selectedCategory === cat.id ? 'text-emerald-600' : 'text-slate-400'}`} /><span className={`text-xs font-semibold ${selectedCategory === cat.id ? 'text-slate-900' : 'text-slate-500'}`}>{cat.label}</span></button>;
+                                })}
+                            </div>
+                        </div>
+                    </div>
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      <Navbar mode={mode} setMode={setMode} />
-      
-      <Hero searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      
-      <RegionFilter selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion} />
-      
-      <CategoryFilter selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />
+                    <main className="max-w-7xl mx-auto px-4 py-8">
+                        <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-900">{searchQuery ? `Results for "${searchQuery}"` : selectedRegion !== 'All Areas' ? `Best of ${selectedRegion}` : 'Local Favorites'}</h2><span className="text-sm text-slate-500">{filteredListings.length} results</span></div>
+                        {filteredListings.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">{filteredListings.map(listing => <ListingCard key={listing.id} listing={listing} mode={mode} />)}</div>
+                        ) : (
+                            <div className="text-center py-20"><div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4"><Search className="h-8 w-8 text-slate-400" /></div><h3 className="text-lg font-bold text-slate-900">No matches found</h3><p className="text-slate-500">Try adjusting your filters or search terms.</p><button onClick={() => {setSelectedRegion('All Areas'); setSelectedCategory('all'); setSearchQuery('')}} className="mt-4 text-emerald-600 font-semibold hover:underline">Clear all filters</button></div>
+                        )}
+                    </main>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-slate-900">
-            {searchQuery ? `Results for "${searchQuery}"` : 
-             selectedRegion !== 'All Areas' ? `Best of ${selectedRegion}` : 
-             'Local Favorites'}
-          </h2>
-          <span className="text-sm text-slate-500">{filteredListings.length} results</span>
-        </div>
+                    <div className="py-12 bg-white">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <div className="flex justify-between items-end mb-6"><div><h2 className="text-2xl font-bold text-slate-900">Live from the Tri-State</h2><p className="text-slate-500 text-sm mt-1">Real experiences from locals and visitors</p></div><a href="#" className="text-emerald-600 text-sm font-semibold hover:underline">View all</a></div>
+                            <div className="flex space-x-4 overflow-x-auto pb-4 no-scrollbar">{STORIES.map((story) => <div key={story.id} className="flex-shrink-0 relative group cursor-pointer w-32 md:w-40"><div className="aspect-[9/16] rounded-2xl overflow-hidden relative border-2 border-white shadow-lg ring-2 ring-emerald-500/30"><img src={story.image} alt={story.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" /><div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" /><div className="absolute bottom-3 left-3"><p className="text-white text-xs font-bold">{story.user}</p><p className="text-white/80 text-[10px]">{story.title}</p></div></div></div>)}</div>
+                        </div>
+                    </div>
 
-        {filteredListings.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredListings.map(listing => (
-              <ListingCard key={listing.id} listing={listing} mode={mode} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="bg-slate-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-              <Search className="h-8 w-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900">No matches found</h3>
-            <p className="text-slate-500">Try adjusting your filters or search terms.</p>
-            <button 
-              onClick={() => {setSelectedRegion('All Areas'); setSelectedCategory('all'); setSearchQuery('')}}
-              className="mt-4 text-emerald-600 font-semibold hover:underline"
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
-      </main>
+                    <div className="bg-slate-900 text-white py-16">
+                        <div className="max-w-7xl mx-auto px-4">
+                            <div className="grid md:grid-cols-2 gap-12 items-center">
+                                <div>
+                                    <span className="text-emerald-400 font-bold tracking-wider text-sm uppercase mb-2 block">Economic Revitalization</span>
+                                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Invest in Hometown Pride</h2>
+                                    <p className="text-slate-300 mb-8 leading-relaxed">Discover Tri-State isn't just a guide; it's a movement. By supporting local makers and small businesses, you are directly contributing to the economic renaissance of West Virginia, Kentucky, and Ohio.</p>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10"><DollarSign className="h-8 w-8 text-emerald-400 mb-4" /><div className="text-3xl font-bold text-white mb-1">$420K</div><div className="text-slate-400 text-sm">Generated for Small Biz</div></div>
+                                        <div className="bg-white/10 backdrop-blur-sm p-6 rounded-2xl border border-white/10"><Users className="h-8 w-8 text-blue-400 mb-4" /><div className="text-3xl font-bold text-white mb-1">12,500</div><div className="text-slate-400 text-sm">Active Supporters</div></div>
+                                    </div>
+                                </div>
+                                <div className="relative">
+                                    <div className="absolute -inset-4 bg-emerald-500/20 blur-2xl rounded-full"></div>
+                                    <div className="relative bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl">
+                                        <h3 className="font-bold text-lg mb-6">Top Funded Projects</h3>
+                                        <div className="space-y-6">
+                                            {[
+                                                { name: "Downtown Ironton Murals", amt: "85%", col: "bg-emerald-500" },
+                                                { name: "Ashland Riverfront Park", amt: "62%", col: "bg-blue-500" },
+                                                { name: "WV Maker's Co-op", amt: "44%", col: "bg-amber-500" }
+                                            ].map((proj, i) => (
+                                                <div key={i}><div className="flex justify-between text-sm mb-2"><span className="text-slate-200">{proj.name}</span><span className="font-bold">{proj.amt}</span></div><div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden"><div className={`h-full ${proj.col}`} style={{ width: proj.amt }}></div></div></div>
+                                            ))}
+                                        </div>
+                                        <button className="w-full mt-8 py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl font-bold transition-colors">View Investment Opportunities</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-      <StoriesSection />
-      
-      {/* Show Investor Dashboard at bottom if in Investor Mode, or as a teaser in Tourist Mode */}
-      <ImpactDashboard />
+                    <footer className="bg-white border-t border-slate-200 py-12">
+                        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+                            <div className="col-span-1 md:col-span-1"><div className="flex items-center mb-4"><div className="bg-emerald-700 p-1.5 rounded-lg mr-2"><Mountain className="h-5 w-5 text-white" /></div><span className="text-lg font-bold text-slate-900">Discover<span className="text-emerald-700">Tri-State</span></span></div><p className="text-slate-500 text-sm">Connecting you to the heart of Appalachia. Made with pride in Huntington, WV.</p></div>
+                            <div><h4 className="font-bold text-slate-900 mb-4">Discover</h4><ul className="space-y-2 text-sm text-slate-500"><li><a href="#" className="hover:text-emerald-600">Eat & Drink</a></li><li><a href="#" className="hover:text-emerald-600">Places to Stay</a></li><li><a href="#" className="hover:text-emerald-600">Adventures</a></li><li><a href="#" className="hover:text-emerald-600">Local Events</a></li></ul></div>
+                            <div><h4 className="font-bold text-slate-900 mb-4">Community</h4><ul className="space-y-2 text-sm text-slate-500"><li><a href="#" className="hover:text-emerald-600">Add Your Business</a></li><li><a href="#" className="hover:text-emerald-600">Investor Portal</a></li><li><a href="#" className="hover:text-emerald-600">Local Hero Badge</a></li></ul></div>
+                            <div><h4 className="font-bold text-slate-900 mb-4">Stay in the Loop</h4><div className="flex"><input type="email" placeholder="Email address" className="bg-slate-50 border border-slate-200 rounded-l-lg px-4 py-2 text-sm w-full focus:outline-none focus:border-emerald-500" /><button className="bg-slate-900 text-white px-4 py-2 rounded-r-lg text-sm hover:bg-slate-800">Join</button></div></div>
+                        </div>
+                        <div className="max-w-7xl mx-auto px-4 mt-12 pt-8 border-t border-slate-100 text-center text-slate-400 text-sm">&copy; 2024 Discover Tri-State. All rights reserved.</div>
+                    </footer>
+                </div>
+            );
+        };
 
-      <Footer />
-    </div>
-  );
-};
-
-export default App;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
