@@ -1,13 +1,19 @@
 # Discover Tri-State
 
-## Phase 2: AI Concierge
+## Phase 3: Agent Workflow + Observability
 
-This phase builds on the Phase 1 foundations and introduces:
+This phase extends the AI concierge with a deterministic multi-agent flow:
 
-- Prompt-to-intent parsing (`groupType`, `budget`, and lightweight constraints)
-- Constrained itinerary planning with explainable scoring
-- Confidence indicators and source citations in itinerary output
-- Basic service tests using Node's built-in test runner
+- **Intent agent** parses user prompts into group, budget, and constraints.
+- **Retrieval agent** fetches candidates with relevance scoring.
+- **Planner agent** generates constrained itinerary stops with explanations and citations.
+- **Verifier agent** validates generated stops and reports verification status.
+
+The UI now includes a workflow trace panel with:
+
+- per-agent actions and execution durations
+- quality score (0–100)
+- verified-stop counts
 
 ## Run locally
 

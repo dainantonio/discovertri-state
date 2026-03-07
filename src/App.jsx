@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bot, MapPin, Search, Sparkles, Star, Wand2 } from 'lucide-react'
+import { Bot, CheckCircle2, MapPin, Search, Sparkles, Star, Wand2 } from 'lucide-react'
 import { CATEGORIES, REGIONS } from './data/listings.js'
-import { parseIntent } from './services/intentService.js'
 import { generateItinerary } from './services/aiPlanner.js'
+import { runConciergeWorkflow } from './services/agentOrchestrator.js'
+import { parseIntent } from './services/intentService.js'
 import { fetchListings } from './services/listingService.js'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
   const [listings, setListings] = useState([])
   const [agentPrompt, setAgentPrompt] = useState('Plan a budget family day outdoors in Huntington')
   const [intent, setIntent] = useState(parseIntent(''))
+  const [workflowResult, setWorkflowResult] = useState(null)
 
   useEffect(() => {
     fetchListings({ query, region, category }).then(setListings)
@@ -31,25 +33,25 @@ function App() {
 
     if (parsedIntent.groupType) setGroupType(parsedIntent.groupType)
     if (parsedIntent.budget) setBudget(parsedIntent.budget)
+
     setConstraints(parsedIntent.constraints)
+    setQuery(parsedIntent.constraints.includes('outdoor') ? 'outdoor' : '')
+    setCategory(parsedIntent.constraints.includes('food') ? 'food' : 'all')
+  }
 
-    if (parsedIntent.constraints.includes('food')) {
-      setCategory('food')
-    }
-
-    if (parsedIntent.constraints.includes('outdoor')) {
-      setQuery('outdoor')
-    }
+  const runWorkflow = async () => {
+    const result = await runConciergeWorkflow({ prompt: agentPrompt, region, category })
+    setWorkflowResult(result)
   }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="bg-slate-900 text-white py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <p className="text-emerald-300 uppercase text-xs tracking-wide font-semibold">Phase 2</p>
-          <h1 className="text-3xl font-bold mt-2">Discover Tri-State AI Concierge</h1>
+          <p className="text-emerald-300 uppercase text-xs tracking-wide font-semibold">Phase 3</p>
+          <h1 className="text-3xl font-bold mt-2">Discover Tri-State Agent Workflow</h1>
           <p className="text-slate-300 mt-2">
-            Intent parsing + constrained planning + explainable recommendations.
+            Multi-agent orchestration with trace logs, verification, and quality scoring.
           </p>
         </div>
       </header>
@@ -72,6 +74,12 @@ function App() {
                 className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500"
               >
                 Apply
+              </button>
+              <button
+                onClick={runWorkflow}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500"
+              >
+                Run Agents
               </button>
             </div>
             <p className="text-xs text-slate-600 mt-2">
@@ -150,9 +158,9 @@ function App() {
         <aside className="bg-white rounded-xl border p-4 h-fit">
           <h2 className="font-bold text-lg flex items-center gap-2">
             <Bot className="h-5 w-5 text-emerald-600" />
-            AI Itinerary Assistant
+            Agent Plan
           </h2>
-          <p className="text-sm text-slate-600 mt-1">Phase 2 explainable planner with confidence + citations.</p>
+          <p className="text-sm text-slate-600 mt-1">Deterministic planner with verification and citations.</p>
 
           <div className="mt-4 space-y-3">
             <label className="text-sm block">
@@ -201,6 +209,33 @@ function App() {
               ))}
             </ol>
           </div>
+
+          {workflowResult ? (
+            <div className="mt-4 rounded-lg bg-slate-50 border p-3">
+              <h3 className="font-semibold text-sm mb-2">Workflow Trace</h3>
+              <p className="text-xs text-slate-600 mb-2">
+                Quality score: <span className="font-semibold">{workflowResult.metrics.qualityScore}/100</span>
+                {' · '}Total duration: {workflowResult.metrics.totalDurationMs}ms
+              </p>
+              <ul className="space-y-2 text-xs">
+                {workflowResult.trace.map((step) => (
+                  <li key={step.agent} className="border rounded p-2 bg-white">
+                    <p className="font-semibold">{step.agent}</p>
+                    <p className="text-slate-600">{step.action}</p>
+                    <p className="text-slate-500">{step.durationMs}ms</p>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs mt-2 text-slate-600">
+                Verified stops:{' '}
+                <span className="font-semibold inline-flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                  {workflowResult.itinerary.stops.filter((stop) => stop.verified).length}/
+                  {workflowResult.itinerary.stops.length}
+                </span>
+              </p>
+            </div>
+          ) : null}
         </aside>
       </main>
     </div>

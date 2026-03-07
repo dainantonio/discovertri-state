@@ -1,8 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseIntent } from '../src/services/intentService.js'
 import { generateItinerary } from '../src/services/aiPlanner.js'
+import { runConciergeWorkflow } from '../src/services/agentOrchestrator.js'
+import { parseIntent } from '../src/services/intentService.js'
 import { fetchListings } from '../src/services/listingService.js'
 
 test('parseIntent extracts group, budget, and constraints', () => {
@@ -30,4 +31,17 @@ test('fetchListings returns ranked results', async () => {
   const results = await fetchListings({ query: 'museum', category: 'culture' })
   assert.ok(results.length > 0)
   assert.ok(results.every((item) => item.relevanceScore > 0))
+})
+
+test('runConciergeWorkflow returns agent trace and metrics', async () => {
+  const result = await runConciergeWorkflow({
+    prompt: 'Need a budget family outdoor day with food',
+    region: 'Huntington (WV)',
+    category: 'all',
+  })
+
+  assert.equal(result.trace.length, 4)
+  assert.ok(result.metrics.qualityScore >= 0)
+  assert.ok(result.metrics.qualityScore <= 100)
+  assert.ok(result.itinerary.stops.every((stop) => typeof stop.verified === 'boolean'))
 })
