@@ -1,14 +1,13 @@
 # Discover Tri-State
 
-Phase 1 implementation focuses on a stable Vite + React architecture and AI-ready foundations.
+## Phase 2: AI Concierge
 
-## What is included in Phase 1
+This phase builds on the Phase 1 foundations and introduces:
 
-- Refactored app entry to standard Vite module loading.
-- Split domain data and services into dedicated modules.
-- Added AI metadata to listings (`budgetLevel`, `groupTypes`, `familyFriendly`, etc.).
-- Added retrieval baseline service for ranked filtering.
-- Added deterministic itinerary assistant to establish agent-ready planning flow.
+- Prompt-to-intent parsing (`groupType`, `budget`, and lightweight constraints)
+- Constrained itinerary planning with explainable scoring
+- Confidence indicators and source citations in itinerary output
+- Basic service tests using Node's built-in test runner
 
 ## Run locally
 
@@ -21,4 +20,10 @@ npm run dev
 
 ```bash
 npm run build
+```
+
+## Test
+
+```bash
+npm test
 ```

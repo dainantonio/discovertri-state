@@ -1,4 +1,4 @@
-import { LISTINGS } from '../data/listings'
+import { LISTINGS } from '../data/listings.js'
 
 const normalize = (value) => value.trim().toLowerCase()
 

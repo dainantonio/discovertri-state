@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bot, MapPin, Search, Sparkles, Star } from 'lucide-react'
-import { CATEGORIES, REGIONS } from './data/listings'
-import { generateItinerary } from './services/aiPlanner'
-import { fetchListings } from './services/listingService'
+import { Bot, MapPin, Search, Sparkles, Star, Wand2 } from 'lucide-react'
+import { CATEGORIES, REGIONS } from './data/listings.js'
+import { parseIntent } from './services/intentService.js'
+import { generateItinerary } from './services/aiPlanner.js'
+import { fetchListings } from './services/listingService.js'
 
 function App() {
   const [query, setQuery] = useState('')
@@ -10,31 +11,74 @@ function App() {
   const [category, setCategory] = useState('all')
   const [groupType, setGroupType] = useState('families')
   const [budget, setBudget] = useState('low')
+  const [constraints, setConstraints] = useState([])
   const [listings, setListings] = useState([])
+  const [agentPrompt, setAgentPrompt] = useState('Plan a budget family day outdoors in Huntington')
+  const [intent, setIntent] = useState(parseIntent(''))
 
   useEffect(() => {
     fetchListings({ query, region, category }).then(setListings)
   }, [query, region, category])
 
   const itinerary = useMemo(
-    () => generateItinerary({ budget, groupType, region }),
-    [budget, groupType, region],
+    () => generateItinerary({ budget, groupType, region, constraints }),
+    [budget, groupType, region, constraints],
   )
+
+  const applyAgentPrompt = () => {
+    const parsedIntent = parseIntent(agentPrompt)
+    setIntent(parsedIntent)
+
+    if (parsedIntent.groupType) setGroupType(parsedIntent.groupType)
+    if (parsedIntent.budget) setBudget(parsedIntent.budget)
+    setConstraints(parsedIntent.constraints)
+
+    if (parsedIntent.constraints.includes('food')) {
+      setCategory('food')
+    }
+
+    if (parsedIntent.constraints.includes('outdoor')) {
+      setQuery('outdoor')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="bg-slate-900 text-white py-8 px-4">
         <div className="max-w-6xl mx-auto">
-          <p className="text-emerald-300 uppercase text-xs tracking-wide font-semibold">Phase 1</p>
-          <h1 className="text-3xl font-bold mt-2">Discover Tri-State AI Foundation</h1>
+          <p className="text-emerald-300 uppercase text-xs tracking-wide font-semibold">Phase 2</p>
+          <h1 className="text-3xl font-bold mt-2">Discover Tri-State AI Concierge</h1>
           <p className="text-slate-300 mt-2">
-            Clean architecture + AI-ready metadata + retrieval baseline + itinerary assistant.
+            Intent parsing + constrained planning + explainable recommendations.
           </p>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8 grid lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2 space-y-4">
+          <div className="bg-white rounded-xl border p-4">
+            <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+              <Wand2 className="h-4 w-4 text-violet-600" /> AI Prompt to Controls
+            </p>
+            <div className="flex gap-2">
+              <input
+                value={agentPrompt}
+                onChange={(event) => setAgentPrompt(event.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Describe your perfect outing"
+              />
+              <button
+                onClick={applyAgentPrompt}
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-500"
+              >
+                Apply
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 mt-2">
+              Parsed intent confidence: <span className="font-semibold">{intent.confidence}</span>
+            </p>
+          </div>
+
           <div className="bg-white rounded-xl border p-4 grid md:grid-cols-3 gap-3">
             <label className="text-sm">
               <span className="font-semibold block mb-1">Search</span>
@@ -108,7 +152,7 @@ function App() {
             <Bot className="h-5 w-5 text-emerald-600" />
             AI Itinerary Assistant
           </h2>
-          <p className="text-sm text-slate-600 mt-1">Phase 1 deterministic planner (agent-ready).</p>
+          <p className="text-sm text-slate-600 mt-1">Phase 2 explainable planner with confidence + citations.</p>
 
           <div className="mt-4 space-y-3">
             <label className="text-sm block">
@@ -144,11 +188,15 @@ function App() {
               <Sparkles className="h-4 w-4 text-emerald-700" />
               {itinerary.summary}
             </p>
+            <p className="text-xs mt-2 text-slate-600">
+              Planner confidence: <span className="font-semibold">{itinerary.confidence}</span>
+            </p>
             <ol className="mt-2 text-sm text-slate-700 space-y-2">
               {itinerary.stops.map((stop) => (
                 <li key={stop.order}>
                   <span className="font-semibold">{stop.order}. {stop.name}</span>
                   <p className="text-xs text-slate-600">{stop.reason}</p>
+                  <p className="text-[11px] text-slate-500">source: {stop.citations.join(', ')}</p>
                 </li>
               ))}
             </ol>
