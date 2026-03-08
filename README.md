@@ -1,19 +1,14 @@
 # Discover Tri-State
 
-## Phase 3: Agent Workflow + Observability
+## Phase 4: Deployment + Reliability Foundation
 
-This phase extends the AI concierge with a deterministic multi-agent flow:
+This phase keeps the deterministic multi-agent concierge flow and adds production-hardening:
 
-- **Intent agent** parses user prompts into group, budget, and constraints.
-- **Retrieval agent** fetches candidates with relevance scoring.
-- **Planner agent** generates constrained itinerary stops with explanations and citations.
-- **Verifier agent** validates generated stops and reports verification status.
-
-The UI now includes a workflow trace panel with:
-
-- per-agent actions and execution durations
-- quality score (0–100)
-- verified-stop counts
+- safer workflow execution with retry-friendly UI error messaging
+- explicit reset and empty/loading states in the app
+- configurable orchestration weights (`src/config/workflowConfig.js`)
+- eval harness (`evals/prompts.json`, `npm run eval`)
+- GitHub Actions CI for test/eval/build and GitHub Pages deployment
 
 ## Run locally
 
@@ -22,14 +17,22 @@ npm install
 npm run dev
 ```
 
-## Build
+## Build / Preview production bundle
 
 ```bash
 npm run build
+npm run preview
 ```
 
-## Test
+## Test and evals
 
 ```bash
 npm test
+npm run eval
 ```
+
+## Deployment
+
+- CI workflow: `.github/workflows/ci.yml`
+- Pages deployment workflow: `.github/workflows/pages.yml`
+- Pages build uses `VITE_BASE_PATH=/discovertri-state/` in workflow.

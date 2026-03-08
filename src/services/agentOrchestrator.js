@@ -1,17 +1,19 @@
+import { WORKFLOW_CONFIG } from '../config/workflowConfig.js'
 import { generateItinerary } from './aiPlanner.js'
 import { parseIntent } from './intentService.js'
 import { fetchListings } from './listingService.js'
 
-const nowMs = () => performance.now()
+const nowMs = () => Date.now()
 
 const summarizeQuality = ({ intent, itinerary, retrievedCount }) => {
+  const { scoring } = WORKFLOW_CONFIG
   let score = 0
 
-  if (intent.groupType) score += 30
-  if (intent.budget) score += 20
-  if (intent.constraints.length) score += 10
-  if (itinerary.stops.length >= 3) score += 25
-  if (retrievedCount >= 3) score += 15
+  if (intent.groupType) score += scoring.intentGroupType
+  if (intent.budget) score += scoring.intentBudget
+  if (intent.constraints.length) score += scoring.intentConstraints
+  if (itinerary.stops.length >= 3) score += scoring.itineraryCoverage
+  if (retrievedCount >= 3) score += scoring.retrievalCoverage
 
   return Math.min(100, score)
 }
@@ -41,7 +43,7 @@ export async function runConciergeWorkflow({ prompt, region = 'All Areas', categ
   trace.push({
     agent: 'intent-agent',
     action: 'Parsed prompt into planner controls',
-    durationMs: Number((nowMs() - intentStart).toFixed(2)),
+    durationMs: nowMs() - intentStart,
   })
 
   const retrievalStart = nowMs()
@@ -49,7 +51,7 @@ export async function runConciergeWorkflow({ prompt, region = 'All Areas', categ
   trace.push({
     agent: 'retrieval-agent',
     action: `Retrieved ${retrieved.length} candidate listings`,
-    durationMs: Number((nowMs() - retrievalStart).toFixed(2)),
+    durationMs: nowMs() - retrievalStart,
   })
 
   const plannerStart = nowMs()
@@ -62,7 +64,7 @@ export async function runConciergeWorkflow({ prompt, region = 'All Areas', categ
   trace.push({
     agent: 'planner-agent',
     action: `Built itinerary with ${itinerary.stops.length} stops`,
-    durationMs: Number((nowMs() - plannerStart).toFixed(2)),
+    durationMs: nowMs() - plannerStart,
   })
 
   const verifierStart = nowMs()
@@ -71,7 +73,7 @@ export async function runConciergeWorkflow({ prompt, region = 'All Areas', categ
   trace.push({
     agent: 'verifier-agent',
     action: `Verified ${verifiedCount}/${verifiedStops.length} stops`,
-    durationMs: Number((nowMs() - verifierStart).toFixed(2)),
+    durationMs: nowMs() - verifierStart,
   })
 
   const qualityScore = summarizeQuality({
@@ -88,11 +90,11 @@ export async function runConciergeWorkflow({ prompt, region = 'All Areas', categ
     },
     retrieval: {
       count: retrieved.length,
-      topResults: retrieved.slice(0, 3).map((item) => item.name),
+      topResults: retrieved.slice(0, WORKFLOW_CONFIG.limits.topRetrievalResults).map((item) => item.name),
     },
     metrics: {
       qualityScore,
-      totalDurationMs: Number((nowMs() - startedAt).toFixed(2)),
+      totalDurationMs: nowMs() - startedAt,
     },
     trace,
   }

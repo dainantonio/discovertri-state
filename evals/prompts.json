@@ -1,0 +1,26 @@
+[
+  {
+    "name": "family_outdoor_budget",
+    "prompt": "Need a cheap family outdoor day",
+    "region": "All Areas",
+    "category": "all",
+    "expect": {
+      "minStops": 1,
+      "requiredConstraints": [
+        "outdoor"
+      ],
+      "minQualityScore": 50
+    }
+  },
+  {
+    "name": "solo_culture",
+    "prompt": "I want a solo museum-focused day",
+    "region": "All Areas",
+    "category": "culture",
+    "expect": {
+      "minStops": 1,
+      "requiredConstraints": [],
+      "minQualityScore": 40
+    }
+  }
+]

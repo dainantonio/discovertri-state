@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   Bot,
   CheckCircle2,
   Loader2,
@@ -49,6 +50,7 @@ function App() {
   const [intent, setIntent] = useState(parseIntent(''))
   const [workflowResult, setWorkflowResult] = useState(null)
   const [isRunningWorkflow, setIsRunningWorkflow] = useState(false)
+  const [workflowError, setWorkflowError] = useState('')
 
   useEffect(() => {
     setIsLoadingListings(true)
@@ -74,11 +76,22 @@ function App() {
     setCategory(parsedIntent.constraints.includes('food') ? 'food' : 'all')
   }
 
+  const clearFilters = () => {
+    setQuery('')
+    setRegion('All Areas')
+    setCategory('all')
+    setConstraints([])
+  }
+
   const runWorkflow = async () => {
     setIsRunningWorkflow(true)
+    setWorkflowError('')
     try {
       const result = await runConciergeWorkflow({ prompt: agentPrompt, region, category })
       setWorkflowResult(result)
+    } catch {
+      setWorkflowError('Workflow failed. Please retry or adjust your prompt.')
+      setWorkflowResult(null)
     } finally {
       setIsRunningWorkflow(false)
     }
@@ -88,10 +101,10 @@ function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 text-slate-900">
       <header className="bg-slate-900 text-white py-10 px-4 border-b border-slate-800 shadow-sm">
         <div className="max-w-6xl mx-auto">
-          <p className="text-emerald-300 uppercase text-xs tracking-wide font-semibold">Phase 3</p>
+          <p className="text-emerald-300 uppercase text-xs tracking-wide font-semibold">Phase 4</p>
           <h1 className="text-3xl md:text-4xl font-bold mt-2">Discover Tri-State Agent Workflow</h1>
           <p className="text-slate-300 mt-2 max-w-2xl">
-            Multi-agent orchestration with better UX, clearer states, verification details, and quality scoring.
+            Production-hardening: improved UI states, safe retries, and deterministic workflow observability.
           </p>
         </div>
       </header>
@@ -182,7 +195,12 @@ function App() {
           </div>
 
           <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-            <h2 className="font-bold text-lg">Listings ({listings.length})</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-lg">Listings ({listings.length})</h2>
+              <button onClick={clearFilters} className="text-xs font-semibold text-slate-600 hover:text-slate-900">
+                Reset filters
+              </button>
+            </div>
 
             {isLoadingListings ? (
               <div className="mt-4 text-sm text-slate-600 inline-flex items-center gap-2">
@@ -223,6 +241,12 @@ function App() {
             Agent Plan
           </h2>
           <p className="text-sm text-slate-600 mt-1">Deterministic planner with verification and citations.</p>
+
+          {workflowError ? (
+            <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 inline-flex items-center gap-2">
+              <AlertTriangle className="h-3 w-3" /> {workflowError}
+            </div>
+          ) : null}
 
           <div className="mt-4 space-y-3">
             <label className="text-sm block">
